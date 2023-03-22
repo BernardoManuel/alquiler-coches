@@ -1,17 +1,12 @@
 package app.servidor;
 
-import app.model.Coche;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.charset.CharsetDecoder;
 import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.Random;
 
 public class ServidorHilo implements Runnable {
@@ -21,12 +16,26 @@ public class ServidorHilo implements Runnable {
     private DataOutputStream dataOutputStream;
     private String nombreCliente;
     private DateFormat dateFormat;
-
+    private Integer idCoche;
     private Integer opcion;
+    private Random random = new Random();
+
+    private final Integer RAPIDO = 2000;
+    private final Integer LENTO = 3000;
+
+    //Constantes de estados del coche reservado.
+    private final String RESERVADO = "RESERVADO";
+    private final String REGISTRANDO = "REGISTRANDO";
+    private final String LIMPIANDO = "LIMPIANDO";
+    private final String ENVIANDO = "ENVIANDO";
+    private final String ENTREGADO = "ENTREGADO";
+    private final String DISPONIBLE = "DISPONIBLE";
+
+    private Integer tiempoUsoCoche;
 
 
 
-    public ServidorHilo(Socket socketCliente, Map<Integer,Coche> listaCoches) {
+    public ServidorHilo(Socket socketCliente) {
         this.socketCliente=socketCliente;
 
         try {
@@ -66,29 +75,56 @@ public class ServidorHilo implements Runnable {
                             SocketServidor.writeActividad("Imprimiendo menu de coches disponibles para reservar",nombreCliente);
 
                             dataOutputStream.writeUTF("\n"+"¿Qué vehículo le gustaría reservar? (ID)");
-                            Integer claveReservar = Integer.parseInt(dataInputStream.readUTF());
+                            idCoche = Integer.parseInt(dataInputStream.readUTF());
 
-                            System.out.println("SERVIDOR: "+nombreCliente+" ha solicitado reservar el coche con id: "+claveReservar+".");
+                            System.out.println("SERVIDOR: "+nombreCliente+" ha solicitado reservar el coche con id: "+idCoche+".");
                             String numeroReserva = numReservaGenerator(); //Creamos el numero de reserva
 
                             SocketServidor.writeReserva("Ha solicitado reservar el coche ",numeroReserva,nombreCliente);
-                            SocketServidor.writeActividad("Cliente ha solicitado reservar el coche con id:"+claveReservar,nombreCliente);
+                            SocketServidor.writeActividad("Cliente ha solicitado reservar el coche con id:"+idCoche,nombreCliente);
 
-                            dataOutputStream.writeUTF("Ha solicitado reservar el coche con clave: "+claveReservar+". ");
-                            dataOutputStream.writeUTF("Confirma la reserva del coche (S/N): "+ SocketServidor.getCoche(claveReservar.toString()));
+                            dataOutputStream.writeUTF("Ha solicitado reservar el coche con clave: "+idCoche+". ");
+                            dataOutputStream.writeUTF("Confirma la reserva del coche (S/N): "+ SocketServidor.getCoche(idCoche.toString()));
                             String respuesta = dataInputStream.readUTF();
                             Character respuestaConfirmacion = respuesta.charAt(0);
 
                             if(Character.toLowerCase(respuestaConfirmacion)=='s'){
-                                dataOutputStream.writeUTF("Coche reservado! \n");
-                                //TODO reservar coche
+
+                                dataOutputStream.writeUTF("Coche reservado!");
+                                SocketServidor.actualizarEstado(idCoche.toString(), RESERVADO); // Actualizamos estado a RESERVADO
+                                dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())).concat("\n")); //Enviamos el estado del coche
+
                             } else if(Character.toLowerCase(respuestaConfirmacion)=='n'){
                                 break;
                             }
                             break;
+
                         case 2:
+                            SocketServidor.actualizarEstado(idCoche.toString(), REGISTRANDO); // Actualizamos estado a REGISTRANDO
+                            dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
 
+                            Thread.sleep(random.nextInt(LENTO)+RAPIDO);
+                            SocketServidor.actualizarEstado(idCoche.toString(),LIMPIANDO); // Actualizamos estado a LIMPIANDO
+                            dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
 
+                            Thread.sleep(random.nextInt(LENTO)+RAPIDO);
+                            SocketServidor.actualizarEstado(idCoche.toString(), ENVIANDO); // Actualizamos estado a ENVIANDO
+                            dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+
+                            Thread.sleep(random.nextInt(LENTO)+RAPIDO);
+                            SocketServidor.actualizarEstado(idCoche.toString(), ENTREGADO); // Actualizamos estado a ENTREGADO
+                            dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+
+                            Thread.sleep(tiempoUsoCoche=random.nextInt(LENTO)+RAPIDO);
+                            SocketServidor.actualizarEstado(idCoche.toString(), DISPONIBLE); // Actualizamos estado a DISPONIBLE
+                            dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+
+                            tiempoUsoCoche = tiempoUsoCoche / 1000;
+                            dataOutputStream.writeUTF("Tiempo de uso del coche: ".concat(tiempoUsoCoche.toString()).concat(" segundos. \n")); //Enviamos el estado del coche
+                            Thread.sleep(random.nextInt(RAPIDO));
+
+                        case 3:
+                            socketCliente.close();
                     }
                 } while (opcion!=3);
 

@@ -91,7 +91,7 @@ public class SocketCliente {
 
     public static void main(String[] args) {
 
-        int puerto = 1234;
+        int puerto = 23233;
         String host = "localhost";
 
         SocketCliente socketCliente = new SocketCliente(puerto,host);

@@ -1,23 +1,17 @@
 package app.servidor;
 
-import app.model.Coche;
-
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SocketServidor {
     private Integer puerto;
     private String host;
     private Boolean servidorRunning;
     private ServidorHilo servidorHilo;
-    private static Map<Integer,Coche> listaCoches;
-    private static Map<Integer,Coche> listaCochesReservados;
     private ServerSocket serverSocket;
 
     private static File actividadServidorLog;
@@ -47,27 +41,6 @@ public class SocketServidor {
         //Inicializamos los lectores y escritores de archivos log
         bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
         bufferedWriterActividad = new BufferedWriter(new FileWriter(actividadServidorLog));
-
-        // crear una lista de coches.
-        listaCoches = new HashMap<Integer,Coche>();
-        // insertamos coches en la lista
-        listaCoches.put(1,new Coche("Honda", "Civic", 2019, 4));
-        listaCoches.put(2,new Coche("Ford", "Mustang", 2015, 2));
-        listaCoches.put(3,new Coche("Chevrolet", "Camaro", 2021, 2));
-        listaCoches.put(4,new Coche("Toyota", "Corolla", 2022, 4));
-        listaCoches.put(5,new Coche("BMW", "M5", 2022, 4));
-        listaCoches.put(6,new Coche("Mercedes-Benz", "S-Class", 2020, 4));
-        listaCoches.put(7,new Coche("Audi", "A4", 2018, 4));
-        listaCoches.put(8,new Coche("Tesla", "Model S", 2021, 4));
-        listaCoches.put(9,new Coche("Lamborghini", "Aventador", 2019, 2));
-        listaCoches.put(10,new Coche("Ferrari", "488 GTB", 2022, 2));
-        listaCoches.put(11,new Coche("Porsche", "911", 2021, 2));
-        listaCoches.put(12,new Coche("Jaguar", "F-Type", 2022, 2));
-        listaCoches.put(13,new Coche("Maserati", "Ghibli", 2021, 4));
-        listaCoches.put(14,new Coche("McLaren", "720S", 2022, 2));
-        listaCoches.put(15,new Coche("Bugatti", "Chiron", 2021, 2));
-
-        listaCochesReservados = new HashMap<Integer,Coche>();
     }
 
     public void start() throws IOException {
@@ -76,7 +49,7 @@ public class SocketServidor {
 
             Socket cliente = serverSocket.accept();
             System.out.println("SERVIDOR: conexion establecida...");
-            servidorHilo = new ServidorHilo(cliente, listaCoches);
+            servidorHilo = new ServidorHilo(cliente);
 
             Thread hilo = new Thread(servidorHilo);
             hilo.start();
@@ -132,7 +105,12 @@ public class SocketServidor {
         bufferedWriterReserva.close();
     }
 
-
+    /**
+     * Metodo estatico sincronizado que devuelve la linea completa en la que se encuentra el coche.
+     * @param idCoche id del coche del que se devuelve la linea
+     * @return
+     * @throws IOException
+     */
     public static synchronized String getCoche(String idCoche) throws IOException {
         vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
         bufferedReaderVehiculos = new BufferedReader(new FileReader(vehiculosLog));
@@ -150,29 +128,66 @@ public class SocketServidor {
         return coche;
     }
 
-    public static synchronized String reservarCoche(String idCoche) throws IOException {
+    /**
+     * Metodo estatico sincronizado que actualiza el estado del vehiculo, al pasado por parametro
+     * @param idCoche id del vehiculo a actualizar
+     * @param estado String que especifica el estado en el que esta el vehiculo.
+     * @throws IOException
+     */
+    public static synchronized void actualizarEstado(String idCoche, String estado) throws IOException {
         vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
-        bufferedReaderVehiculos = new BufferedReader(new FileReader(vehiculosLog));
-        String coche = null;
+        BufferedReader bufferedReaderVehiculos = new BufferedReader(new FileReader(vehiculosLog));
 
         String line;
-        while((line=bufferedReaderVehiculos.readLine())!=null){
-            if(line.contains("\"id\":".concat(idCoche).concat(","))){
-                coche = line;
-                break;
+        StringBuilder stringBuilder = new StringBuilder();
+        while ((line = bufferedReaderVehiculos.readLine()) != null) {
+            if (line.contains("\"id\":".concat(idCoche).concat(","))) {
+                int indexInicio = line.indexOf("Estado") + 10;
+                int indexFin = line.indexOf("}") - 1;
+                line = line.substring(0, indexInicio) + estado + line.substring(indexFin);
+            }
+            stringBuilder.append(line).append("\n");
+        }
+        bufferedReaderVehiculos.close();
+
+        // Actualizar el archivo con los cambios
+        FileWriter fileWriter = new FileWriter(vehiculosLog);
+        fileWriter.write(stringBuilder.toString());
+        fileWriter.close();
+    }
+
+
+    /**
+     * Metodo estatico sincronizado que devuelve el estado del coche.
+     * @param idCoche
+     * @return
+     * @throws IOException
+     */
+    public static synchronized String getEstado(String idCoche) throws IOException {
+        vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
+        BufferedReader bufferedReaderVehiculos = new BufferedReader(new FileReader(vehiculosLog));
+        String estado = "";
+
+        String line;
+        while ((line = bufferedReaderVehiculos.readLine()) != null) {
+            if (line.contains("\"id\":".concat(idCoche).concat(","))) {
+                //Inicio de la cadena estado
+                int indexInicio = line.indexOf("Estado") + 10;
+                //Fin de la cadena estado
+                int indexFin = line.indexOf("}") - 1;
+
+                estado = line.substring(indexInicio,indexFin);
             }
         }
         bufferedReaderVehiculos.close();
 
-        return coche;
+        return estado;
     }
-
-
 
 
     public static void main(String[] args) throws IOException {
 
-        int puerto = 1234;
+        int puerto = 23233;
         String host = "localhost";
 
         SocketServidor socketServidor = null;
