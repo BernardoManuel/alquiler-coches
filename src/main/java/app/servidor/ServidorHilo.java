@@ -22,6 +22,9 @@ public class ServidorHilo implements Runnable {
     private String nombreCliente;
     private DateFormat dateFormat;
 
+    private Integer opcion;
+
+
 
     public ServidorHilo(Socket socketCliente, Map<Integer,Coche> listaCoches) {
         this.socketCliente=socketCliente;
@@ -40,33 +43,55 @@ public class ServidorHilo implements Runnable {
 
                 nombreCliente = dataInputStream.readUTF();
                 Thread.sleep(100);//retardo corto
+
                 System.out.println("SERVIDOR: "+nombreCliente+" se ha conectado... \n");
+                SocketServidor.writeActividad(nombreCliente+" se ha conectado...",nombreCliente);
+
                 Thread.sleep(100);//retardo corto
-                dataOutputStream.writeUTF("Bienvenido "+nombreCliente+". \n");
+                dataOutputStream.writeUTF("Bienvenido "+nombreCliente+". \n\n");
 
-                //printList();
-                SocketServidor.menuVehiculos(socketCliente);
+                do {
+                    SocketServidor.writeActividad("Imprimiendo menu de opciones...",nombreCliente);
+                    dataOutputStream.writeUTF("MENU DE OPCIONES");
+                    dataOutputStream.writeUTF("1: Reservar un coche.");
+                    dataOutputStream.writeUTF("2: Ver estado de reserva.");
+                    dataOutputStream.writeUTF("3: Salir..."+"\n");
 
-                dataOutputStream.writeUTF("\n"+"¿Qué vehículo le gustaría reservar? (ID)");
-                Integer claveReservar = Integer.parseInt(dataInputStream.readUTF());
+                    opcion = Integer.parseInt(dataInputStream.readUTF());
 
-                System.out.println("SERVIDOR: "+nombreCliente+" ha solicitado reservar el coche con clave: "+claveReservar+".");
-                String numeroReserva = numReservaGenerator(); //Creamos el numero de reserva
+                    switch (opcion){
 
-                SocketServidor.writeReserva("Ha solicitado reservar el coche ",numeroReserva,nombreCliente);
+                        case 1:
+                            SocketServidor.menuVehiculos(socketCliente);
+                            SocketServidor.writeActividad("Imprimiendo menu de coches disponibles para reservar",nombreCliente);
 
-                dataOutputStream.writeUTF("Ha solicitado reservar el coche con clave: "+claveReservar+". ");
-                dataOutputStream.writeUTF("Confirma la reserva del coche (S/N): "+ SocketServidor.getCoche(claveReservar.toString()));
-                String respuesta = dataInputStream.readUTF();
-                Character respuestaConfirmacion = respuesta.charAt(0);
+                            dataOutputStream.writeUTF("\n"+"¿Qué vehículo le gustaría reservar? (ID)");
+                            Integer claveReservar = Integer.parseInt(dataInputStream.readUTF());
 
-                if(Character.toLowerCase(respuestaConfirmacion)=='s'){
-                    dataOutputStream.writeUTF("Coche reservado! ");
-                    SocketServidor.reservarCoche(claveReservar,nombreCliente);
+                            System.out.println("SERVIDOR: "+nombreCliente+" ha solicitado reservar el coche con id: "+claveReservar+".");
+                            String numeroReserva = numReservaGenerator(); //Creamos el numero de reserva
 
-                } else if(Character.toLowerCase(respuestaConfirmacion)=='n'){
-                    SocketServidor.menuVehiculos(socketCliente);
-                }
+                            SocketServidor.writeReserva("Ha solicitado reservar el coche ",numeroReserva,nombreCliente);
+                            SocketServidor.writeActividad("Cliente ha solicitado reservar el coche con id:"+claveReservar,nombreCliente);
+
+                            dataOutputStream.writeUTF("Ha solicitado reservar el coche con clave: "+claveReservar+". ");
+                            dataOutputStream.writeUTF("Confirma la reserva del coche (S/N): "+ SocketServidor.getCoche(claveReservar.toString()));
+                            String respuesta = dataInputStream.readUTF();
+                            Character respuestaConfirmacion = respuesta.charAt(0);
+
+                            if(Character.toLowerCase(respuestaConfirmacion)=='s'){
+                                dataOutputStream.writeUTF("Coche reservado! \n");
+                                //TODO reservar coche
+                            } else if(Character.toLowerCase(respuestaConfirmacion)=='n'){
+                                break;
+                            }
+                            break;
+                        case 2:
+
+
+                    }
+                } while (opcion!=3);
+
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -75,19 +100,7 @@ public class ServidorHilo implements Runnable {
             }
     }
 
-//    /**
-//     * Metodo que envia la lista de coches al cliente.
-//     * @throws InterruptedException
-//     * @throws IOException
-//     */
-//    private void printList() throws InterruptedException, IOException {
-//        for (Map.Entry<Integer, Coche> entry : listaCoches.entrySet()) {
-//            Thread.sleep(10);//retardo rapido
-//            Integer clave = entry.getKey();
-//            Coche coche = entry.getValue();
-//            dataOutputStream.writeUTF("Coche id: ".concat(clave.toString()+" ").concat(coche.toString()));
-//        }
-//    }
+
 
     /**
      * Metodo que genera un numero de reserva tomando la fecha y hora actual, y un numero aleatorio
@@ -100,9 +113,9 @@ public class ServidorHilo implements Runnable {
 
         String fechaHora = formattedDateTime.replaceAll("/","").replaceAll(" ","-").replaceAll(":","");
 
-        Integer random = new Random().nextInt(90);
+        Character inicial = nombreCliente.charAt(0);
 
-        return formattedDateTime.concat("-").concat(random.toString());
+        return fechaHora.concat(inicial.toString());
     }
 
 

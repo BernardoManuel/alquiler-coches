@@ -85,38 +85,11 @@ public class SocketServidor {
 
 
     /**
-     * Metodo sinconizado que realiza la reserva del coche
-     *
-     * @param claveCoche    hace referencia al key del HashMap correspondiente al coche
-     *                      Añade el coche a una lista de coches reservados y lo remueve de la lista de coches disponibles
-     * @param nombreCliente
+     * Metodo estatico sincronizado que envia al cliente el menu de vehiculos disponibles
+     * es decir: Estado = DISPONIBLE
+     * @param socketCliente
+     * @throws IOException
      */
-    public static synchronized void reservarCoche(Integer claveCoche, String nombreCliente){
-        //Colocamos el coche en la lista de coches reservados.
-        Coche coche = listaCoches.get(claveCoche);
-        listaCochesReservados.put(coche.hashCode(),coche);
-
-        listaCoches.remove(claveCoche);
-        System.out.println("SERVIDOR: "+nombreCliente+" ha reservado el coche: "+claveCoche+" "+coche.toString());
-    }
-
-//    /**
-//     * Metodo sinconizado que realiza la reserva del coche
-//     *
-//     * @param claveCoche    hace referencia al key del HashMap correspondiente al coche
-//     *                      Añade el coche a una lista de coches reservados y lo remueve de la lista de coches disponibles
-//     * @param nombreCliente
-//     */
-//    public static synchronized void reservarCoche(Integer claveCoche, String nombreCliente){
-//        //Colocamos el coche en la lista de coches reservados.
-//        Coche coche = listaCoches.get(claveCoche);
-//        listaCochesReservados.put(coche.hashCode(),coche);
-//
-//        listaCoches.remove(claveCoche);
-//        System.out.println("SERVIDOR: "+nombreCliente+" ha reservado el coche: "+claveCoche+" "+coche.toString());
-//    }
-
-
     public static synchronized void menuVehiculos(Socket socketCliente) throws IOException {
         DataOutputStream dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
         vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
@@ -126,10 +99,14 @@ public class SocketServidor {
 
         String line;
         while((line=bufferedReaderVehiculos.readLine())!=null){
-            dataOutputStream.writeUTF(line);
+            //Envia unicamente los coches que tienen estado = "DISPONIBLE"
+            if(line.contains("DISPONIBLE")){
+                dataOutputStream.writeUTF(line);
+            }
         }
         bufferedReaderVehiculos.close();
     }
+
 
     public static synchronized void writeReserva(String mensaje, String numeroReserva, String nombreCliente) throws IOException {
         numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
@@ -143,17 +120,18 @@ public class SocketServidor {
         bufferedWriterReserva.close();
     }
 
-    public static synchronized void writeActividad(String mensaje, String numeroReserva, String nombreCliente) throws IOException {
-        numeroReservaLog = new File("src/main/resources/logs/vehiculos.log");
+    public static synchronized void writeActividad(String mensaje, String nombreCliente) throws IOException {
+        numeroReservaLog = new File("src/main/resources/logs/actividad_servidor.log");
         bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedDateTime = now.format(formatter);
 
-        bufferedWriterReserva.write(formattedDateTime+ " RESERVA: '"+numeroReserva+"'. CLIENTE: "+nombreCliente+" "+mensaje+". \n");
+        bufferedWriterReserva.write(formattedDateTime+ " SERVIDOR: "+mensaje+". CLIENTE: "+nombreCliente+"\n");
         bufferedWriterReserva.close();
     }
+
 
     public static synchronized String getCoche(String idCoche) throws IOException {
         vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
@@ -162,7 +140,7 @@ public class SocketServidor {
 
         String line;
         while((line=bufferedReaderVehiculos.readLine())!=null){
-            if(line.contains(idCoche)){
+            if(line.contains("\"id\":".concat(idCoche).concat(","))){
                 coche = line;
                 break;
             }
@@ -171,6 +149,26 @@ public class SocketServidor {
 
         return coche;
     }
+
+    public static synchronized String reservarCoche(String idCoche) throws IOException {
+        vehiculosLog = new File("src/main/resources/logs/vehiculos.log");
+        bufferedReaderVehiculos = new BufferedReader(new FileReader(vehiculosLog));
+        String coche = null;
+
+        String line;
+        while((line=bufferedReaderVehiculos.readLine())!=null){
+            if(line.contains("\"id\":".concat(idCoche).concat(","))){
+                coche = line;
+                break;
+            }
+        }
+        bufferedReaderVehiculos.close();
+
+        return coche;
+    }
+
+
+
 
     public static void main(String[] args) throws IOException {
 
