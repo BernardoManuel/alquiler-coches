@@ -25,7 +25,6 @@ public class SocketServidor {
 
 
 
-
     public SocketServidor(Integer puerto, String host) throws IOException {
         this.puerto = puerto;
         this.host = host;
@@ -35,20 +34,26 @@ public class SocketServidor {
         serverSocket = new ServerSocket();
         serverSocket.bind(address);
 
-        //Inicializamos los archivos log
-        actividadServidorLog = new File("src/main/resources/logs/actividad_servidor.log");
-        numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
-        //Inicializamos los lectores y escritores de archivos log
-        bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
-        bufferedWriterActividad = new BufferedWriter(new FileWriter(actividadServidorLog));
+//        //Inicializamos los archivos log
+//        actividadServidorLog = new File("src/main/resources/logs/actividad_servidor.log");
+//        numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
+//        //Inicializamos los lectores y escritores de archivos log
+//        bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
+//        bufferedWriterActividad = new BufferedWriter(new FileWriter(actividadServidorLog));
     }
 
+    /**
+     * Método start del servidor
+     * Realiza un bucle while mientras servidorRunning=true y recibe conexiones de clientes
+     * Una vez realizada una conexión se ejecuta un hilo servidorHilo que manejara la comunicación con el cliente.
+     * @throws IOException
+     */
     public void start() throws IOException {
         while(servidorRunning){
             System.out.println("SERVIDOR: esperando conexiones...");
 
             Socket cliente = serverSocket.accept();
-            System.out.println("SERVIDOR: conexion establecida...");
+            System.out.println("SERVIDOR: conexión establecida...");
             servidorHilo = new ServidorHilo(cliente);
 
             Thread hilo = new Thread(servidorHilo);
@@ -58,7 +63,7 @@ public class SocketServidor {
 
 
     /**
-     * Metodo estatico sincronizado que envia al cliente el menu de vehiculos disponibles
+     * Método estático sincronizado que envía al cliente el menu de vehículos disponibles
      * es decir: Estado = DISPONIBLE
      * @param socketCliente
      * @throws IOException
@@ -72,7 +77,7 @@ public class SocketServidor {
 
         String line;
         while((line=bufferedReaderVehiculos.readLine())!=null){
-            //Envia unicamente los coches que tienen estado = "DISPONIBLE"
+            //Envía únicamente los coches que tienen estado = "DISPONIBLE"
             if(line.contains("DISPONIBLE")){
                 dataOutputStream.writeUTF(line);
             }
@@ -81,6 +86,14 @@ public class SocketServidor {
     }
 
 
+    /**
+     * Método estático sincronizado que escribe en el fichero numero_reserva.log un mensaje
+     * junto a un formato de fecha y hora actuales "yyyy/MM/dd HH:mm:ss"
+     * @param mensaje mensaje a escribir
+     * @param numeroReserva número de reserva generado al realizar una reserva
+     * @param nombreCliente nombre del cliente conectado
+     * @throws IOException
+     */
     public static synchronized void writeReserva(String mensaje, String numeroReserva, String nombreCliente) throws IOException {
         numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
         bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
@@ -93,22 +106,29 @@ public class SocketServidor {
         bufferedWriterReserva.close();
     }
 
+    /**
+     * Método estático sincronizado que escribe en el fichero actividad_servidor.log un mensaje
+     * junto a un formato de fecha y hora actuales "yyyy/MM/dd HH:mm:ss"
+     * @param mensaje mensaje a escribir
+     * @param nombreCliente nombre del cliente conectado
+     * @throws IOException
+     */
     public static synchronized void writeActividad(String mensaje, String nombreCliente) throws IOException {
         numeroReservaLog = new File("src/main/resources/logs/actividad_servidor.log");
-        bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
+        bufferedWriterActividad = new BufferedWriter(new FileWriter(numeroReservaLog));
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedDateTime = now.format(formatter);
 
-        bufferedWriterReserva.write(formattedDateTime+ " SERVIDOR: "+mensaje+". CLIENTE: "+nombreCliente+"\n");
-        bufferedWriterReserva.close();
+        bufferedWriterActividad.write(formattedDateTime+ " SERVIDOR: "+mensaje+". CLIENTE: "+nombreCliente+"\n");
+        bufferedWriterActividad.close();
     }
 
     /**
-     * Metodo estatico sincronizado que devuelve la linea completa en la que se encuentra el coche.
+     * Método estático sincronizado que devuelve la línea completa en la que se encuentra el coche.
      * @param idCoche id del coche del que se devuelve la linea
-     * @return
+     * @return coche : String -> linea completa del vehículo
      * @throws IOException
      */
     public static synchronized String getCoche(String idCoche) throws IOException {
@@ -129,9 +149,9 @@ public class SocketServidor {
     }
 
     /**
-     * Metodo estatico sincronizado que actualiza el estado del vehiculo, al pasado por parametro
+     * Método estático sincronizado que actualiza el estado del vehículo, al pasado por parámetro
      * @param idCoche id del vehiculo a actualizar
-     * @param estado String que especifica el estado en el que esta el vehiculo.
+     * @param estado String que especifica el estado en el que está el vehículo.
      * @throws IOException
      */
     public static synchronized void actualizarEstado(String idCoche, String estado) throws IOException {
@@ -158,7 +178,7 @@ public class SocketServidor {
 
 
     /**
-     * Metodo estatico sincronizado que devuelve el estado del coche.
+     * Método estático sincronizado que devuelve el estado del coche.
      * @param idCoche
      * @return
      * @throws IOException
@@ -194,15 +214,10 @@ public class SocketServidor {
         try {
 
             socketServidor = new SocketServidor(puerto,host);
-
             socketServidor.start();
 
         } catch (IOException e) {
             throw new RuntimeException(e);
-
         }
-
-
     }
-
 }

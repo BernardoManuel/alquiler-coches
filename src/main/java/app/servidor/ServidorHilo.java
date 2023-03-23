@@ -139,8 +139,8 @@ public class ServidorHilo implements Runnable {
 
 
     /**
-     * Metodo que genera un numero de reserva tomando la fecha y hora actual, y un numero aleatorio
-     * @return String que es el numero de reserva formatedo "yyyyMMdd-HHmmss-'numeroaleatorio'"
+     * Método que genera un número de reserva tomando la fecha y hora actual, y la inicial del nombre del cliente
+     * @return String que es el número de reserva formateado "yyyyMMdd-HHmmss-inicial"
      */
     private String numReservaGenerator(){
         LocalDateTime now = LocalDateTime.now();
