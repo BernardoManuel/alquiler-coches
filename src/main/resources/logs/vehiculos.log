@@ -1,6 +1,6 @@
 {"id":1, "Marca": "Honda", "Modelo": "Civic", "Año": 2019, "Pasajeros": 4, "Precio por día": 50€, "Estado": "DISPONIBLE"},
 {"id":2, "Marca": "Ford", "Modelo": "Mustang", "Año": 2015, "Pasajeros": 2, "Precio por día": 80€, "Estado": "DISPONIBLE"},
-{"id":3, "Marca": "Chevrolet", "Modelo": "Camaro", "Año": 2021, "Pasajeros": 2, "Precio por día": 100€, "Estado": "RESERVADO"},
+{"id":3, "Marca": "Chevrolet", "Modelo": "Camaro", "Año": 2021, "Pasajeros": 2, "Precio por día": 100€, "Estado": "DISPONIBLE"},
 {"id":4, "Marca": "Toyota", "Modelo": "Corolla", "Año": 2022, "Pasajeros": 4, "Precio por día": 60€, "Estado": "DISPONIBLE"},
 {"id":5, "Marca": "BMW", "Modelo": "M5", "Año": 2022, "Pasajeros": 4, "Precio por día": 120€, "Estado": "DISPONIBLE"},
 {"id":6, "Marca": "Mercedes-Benz", "Modelo": "S-Class", "Año": 2020, "Pasajeros": 4, "Precio por día": 150€, "Estado": "DISPONIBLE"},

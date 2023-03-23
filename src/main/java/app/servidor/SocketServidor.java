@@ -25,6 +25,7 @@ public class SocketServidor {
 
 
 
+
     public SocketServidor(Integer puerto, String host) throws IOException {
         this.puerto = puerto;
         this.host = host;
@@ -33,13 +34,6 @@ public class SocketServidor {
         InetSocketAddress address = new InetSocketAddress(host,puerto);
         serverSocket = new ServerSocket();
         serverSocket.bind(address);
-
-//        //Inicializamos los archivos log
-//        actividadServidorLog = new File("src/main/resources/logs/actividad_servidor.log");
-//        numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
-//        //Inicializamos los lectores y escritores de archivos log
-//        bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
-//        bufferedWriterActividad = new BufferedWriter(new FileWriter(actividadServidorLog));
     }
 
     /**
@@ -61,6 +55,14 @@ public class SocketServidor {
         }
     }
 
+    public void stop() throws IOException {
+        servidorRunning=false;
+
+        serverSocket.close();
+        bufferedReaderVehiculos.close();
+        bufferedWriterReserva.close();
+        bufferedWriterActividad.close();
+    }
 
     /**
      * Método estático sincronizado que envía al cliente el menu de vehículos disponibles
@@ -95,14 +97,17 @@ public class SocketServidor {
      * @throws IOException
      */
     public static synchronized void writeReserva(String mensaje, String numeroReserva, String nombreCliente) throws IOException {
-        numeroReservaLog = new File("src/main/resources/logs/numero_reserva.log");
-        bufferedWriterReserva = new BufferedWriter(new FileWriter(numeroReservaLog));
+        numeroReservaLog= new File("src/main/resources/logs/numero_reserva.log");
+        RandomAccessFile raf = new RandomAccessFile(numeroReservaLog, "rw");
+        raf.seek(raf.length());
+        bufferedWriterReserva = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(raf.getFD()), "UTF-8"));
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedDateTime = now.format(formatter);
 
-        bufferedWriterReserva.write(formattedDateTime+ " RESERVA: '"+numeroReserva+"'. CLIENTE: "+nombreCliente+" "+mensaje+". \n");
+        bufferedWriterReserva.write(formattedDateTime+ " RESERVA: '"+numeroReserva+"' CLIENTE: "+nombreCliente+" "+mensaje+".\n");
+
         bufferedWriterReserva.close();
     }
 
@@ -114,14 +119,17 @@ public class SocketServidor {
      * @throws IOException
      */
     public static synchronized void writeActividad(String mensaje, String nombreCliente) throws IOException {
-        numeroReservaLog = new File("src/main/resources/logs/actividad_servidor.log");
-        bufferedWriterActividad = new BufferedWriter(new FileWriter(numeroReservaLog));
+        actividadServidorLog = new File("src/main/resources/logs/actividad_servidor.log");
+        RandomAccessFile raf = new RandomAccessFile(actividadServidorLog, "rw");
+        raf.seek(raf.length());
+        bufferedWriterActividad = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(raf.getFD()), "UTF-8"));
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedDateTime = now.format(formatter);
 
-        bufferedWriterActividad.write(formattedDateTime+ " SERVIDOR: "+mensaje+". CLIENTE: "+nombreCliente+"\n");
+        bufferedWriterActividad.write(formattedDateTime+ " CLIENTE: "+nombreCliente+". SERVIDOR: "+mensaje+"\n");
+
         bufferedWriterActividad.close();
     }
 
@@ -207,7 +215,7 @@ public class SocketServidor {
 
     public static void main(String[] args) throws IOException {
 
-        int puerto = 23233;
+        int puerto = 2322;
         String host = "localhost";
 
         SocketServidor socketServidor = null;
@@ -217,6 +225,7 @@ public class SocketServidor {
             socketServidor.start();
 
         } catch (IOException e) {
+            socketServidor.stop();
             throw new RuntimeException(e);
         }
     }

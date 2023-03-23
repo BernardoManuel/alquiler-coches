@@ -1,10 +1,9 @@
 package app.cliente;
 
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.util.Scanner;
 
 public class SocketCliente {
@@ -46,32 +45,28 @@ public class SocketCliente {
     }
 
     public void recibirDatos(){
-        new Thread(new Runnable() {
-            public void run() {
-                while (clienteRunning){
-                    try {
-                        String msj = dataInputStream.readUTF();
-                        System.out.println(msj);
-                    } catch (IOException e) {
-                        stop();
-                        throw new RuntimeException(e);
-                    }
+        new Thread(() -> {
+            while (clienteRunning){
+                try {
+                    String msj = dataInputStream.readUTF();
+                    System.out.println(msj);
+                } catch (IOException e) {
+                    stop();
+                    throw new RuntimeException(e);
                 }
             }
         }).start();
     }
 
     public void enviarDatos(){
-        new Thread(new Runnable() {
-            public void run() {
-                while (clienteRunning){
-                    try {
-                        String msj = teclado.nextLine();
-                        dataOutputStream.writeUTF(msj);
-                    } catch (IOException e) {
-                        stop();
-                        throw new RuntimeException(e);
-                    }
+        new Thread(() -> {
+            while (clienteRunning){
+                try {
+                    String msj = teclado.nextLine();
+                    dataOutputStream.writeUTF(msj);
+                } catch (IOException e) {
+                    stop();
+                    throw new RuntimeException(e);
                 }
             }
         }).start();
@@ -91,7 +86,7 @@ public class SocketCliente {
 
     public static void main(String[] args) {
 
-        int puerto = 23233;
+        int puerto = 2322;
         String host = "localhost";
 
         SocketCliente socketCliente = new SocketCliente(puerto,host);

@@ -33,6 +33,8 @@ public class ServidorHilo implements Runnable {
 
     private Integer tiempoUsoCoche;
 
+    private String numeroReserva;
+
 
 
     public ServidorHilo(Socket socketCliente) {
@@ -78,10 +80,10 @@ public class ServidorHilo implements Runnable {
                             idCoche = Integer.parseInt(dataInputStream.readUTF());
 
                             System.out.println("SERVIDOR: "+nombreCliente+" ha solicitado reservar el coche con id: "+idCoche+".");
-                            String numeroReserva = numReservaGenerator(); //Creamos el numero de reserva
+                            numeroReserva = numReservaGenerator(); //Creamos el numero de reserva
 
-                            SocketServidor.writeReserva("Ha solicitado reservar el coche ",numeroReserva,nombreCliente);
-                            SocketServidor.writeActividad("Cliente ha solicitado reservar el coche con id:"+idCoche,nombreCliente);
+                            SocketServidor.writeReserva("Ha solicitado reservar el coche ",numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Cliente ha solicitado reservar el coche con id:"+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
 
                             dataOutputStream.writeUTF("Ha solicitado reservar el coche con clave: "+idCoche+". ");
                             dataOutputStream.writeUTF("Confirma la reserva del coche (S/N): "+ SocketServidor.getCoche(idCoche.toString()));
@@ -91,7 +93,11 @@ public class ServidorHilo implements Runnable {
                             if(Character.toLowerCase(respuestaConfirmacion)=='s'){
 
                                 dataOutputStream.writeUTF("Coche reservado!");
+
                                 SocketServidor.actualizarEstado(idCoche.toString(), RESERVADO); // Actualizamos estado a RESERVADO
+                                SocketServidor.writeReserva("Ha reservado el coche ",numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                                SocketServidor.writeActividad("Cliente ha reservado el coche con id:"+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
+
                                 dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())).concat("\n")); //Enviamos el estado del coche
 
                             } else if(Character.toLowerCase(respuestaConfirmacion)=='n'){
@@ -100,29 +106,45 @@ public class ServidorHilo implements Runnable {
                             break;
 
                         case 2:
+                            SocketServidor.writeReserva("Ha solicitado ver el estado del coche. ",numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Ha solicitado ver el estado del coche. "+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
                             SocketServidor.actualizarEstado(idCoche.toString(), REGISTRANDO); // Actualizamos estado a REGISTRANDO
                             dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
 
                             Thread.sleep(random.nextInt(LENTO)+RAPIDO);
                             SocketServidor.actualizarEstado(idCoche.toString(),LIMPIANDO); // Actualizamos estado a LIMPIANDO
                             dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Mostrando estado del coche..."+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
 
                             Thread.sleep(random.nextInt(LENTO)+RAPIDO);
                             SocketServidor.actualizarEstado(idCoche.toString(), ENVIANDO); // Actualizamos estado a ENVIANDO
                             dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Mostrando estado del coche..."+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
 
                             Thread.sleep(random.nextInt(LENTO)+RAPIDO);
                             SocketServidor.actualizarEstado(idCoche.toString(), ENTREGADO); // Actualizamos estado a ENTREGADO
                             dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Mostrando estado del coche..."+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
 
                             Thread.sleep(tiempoUsoCoche=random.nextInt(LENTO)+RAPIDO);
                             SocketServidor.actualizarEstado(idCoche.toString(), DISPONIBLE); // Actualizamos estado a DISPONIBLE
                             dataOutputStream.writeUTF("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString())),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Mostrando estado del coche: ".concat(SocketServidor.getEstado(idCoche.toString()))+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
 
                             tiempoUsoCoche = tiempoUsoCoche / 1000;
                             dataOutputStream.writeUTF("Tiempo de uso del coche: ".concat(tiempoUsoCoche.toString()).concat(" segundos. \n")); //Enviamos el estado del coche
+                            SocketServidor.writeReserva("Tiempo de uso del coche: ".concat(tiempoUsoCoche.toString()).concat(" segundos. "),numeroReserva,nombreCliente); //Escribimos en numero_reserva.log
+                            SocketServidor.writeActividad("Tiempo de uso del coche: ".concat(tiempoUsoCoche.toString()).concat("segundos. ")+idCoche,nombreCliente); //Escribimos en actividad_servidor.log
+
                             Thread.sleep(random.nextInt(RAPIDO));
 
+                            opcion=3;
+                            break;
                         case 3:
                             socketCliente.close();
                     }
